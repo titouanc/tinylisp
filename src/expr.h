@@ -14,7 +14,8 @@ typedef enum {
 typedef enum {
     SELFEVAL,
     APPLICATION,
-    LOOKUP
+    LOOKUP,
+    DEFINE
 } lisp_expr_type;
 
 /* An application expression */
@@ -34,14 +35,21 @@ typedef struct {
     const char *name;
 } lisp_expr_lookup;
 
+typedef struct {
+    bool   overwrite; /* overwrite in parent env (!set) if true */
+    const char *name; /* symbol to be defined */
+    lisp_expr  *expr; /* value to assign */
+} lisp_expr_define;
+
 /* A lisp expression has a type and a value */
 struct lisp_expr_t {
     int refcount;
     lisp_expr_type type;
     union {
-        lisp_expr_selfeval    selfeval;
+        lisp_expr_selfeval       selfeval;
         lisp_expr_application application;
-        lisp_expr_lookup      lookup;
+        lisp_expr_lookup           lookup;
+        lisp_expr_define           define;
     } value;
 };
 

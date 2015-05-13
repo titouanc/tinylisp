@@ -34,6 +34,10 @@ static void destroy_expr(lisp_expr *expr)
         case LOOKUP:
             free((void*) expr->value.lookup.name);
             break;
+        case DEFINE:
+            free((void*) expr->value.define.name);
+            release_expr(expr->value.define.expr);
+            break;
     }
     memset(expr, 0, sizeof(lisp_expr));
     free(expr);
@@ -100,6 +104,10 @@ void dump_expr(lisp_expr *expr)
             break;
         case LOOKUP:
             printf("%s", (expr->value.lookup.name));
+            break;
+        case DEFINE:
+            printf("(%s %s ", expr->value.define.overwrite ? "set!" : "define", expr->value.define.name);
+            dump_expr(expr->value.define.expr);
             break;
     }
 }
@@ -247,6 +255,29 @@ static lisp_expr *analyze_lambda(
     return NULL;
 }
 
+static lisp_expr *analyze_define(
+    const char *str,
+    const char **endptr,
+    lisp_err *err
+){
+    char name[LISP_MAX_NAME_SIZE];
+    int i;
+    str = ignore(str);
+    for (i=0; i<LISP_MAX_NAME_SIZE-1 && is_name_char(str[i]); i++){
+        name[i] = str[i];
+    }
+    name[i] = '\0';
+    str = ignore(str+i);
+
+    lisp_expr *expr = analyze(str, endptr, err);
+    lisp_expr *res = create_expr(DEFINE);
+    res->value.define.expr = expr;
+    res->value.define.name = duplicate_string(name, LISP_MAX_NAME_SIZE);
+    res->value.define.overwrite = false;
+
+    return res;
+}
+
 #define is_number(x) ('0' <= x && x <= '9')
 lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
 {
@@ -260,7 +291,11 @@ lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
     else if (*str == '('){
         if (strncmp(str+1, "lambda ", 7) == 0){
             res = analyze_lambda(str+8, endptr, err);
-        } else {
+        } 
+        else if (strncmp(str+1, "define ", 7) == 0){
+            res = analyze_define(str+8, endptr, err);
+        } 
+        else {
             res = analyze_application(str, endptr, err);
         }
     }

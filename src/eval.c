@@ -9,6 +9,7 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
 
     lisp_obj *res = NIL;
 
+    /* Internal procedure */
     if (callable->type == PROC){
         /* Eval args */
         lisp_obj **args = calloc(app->nparams, sizeof(lisp_obj*));
@@ -25,6 +26,8 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         }
         free(args);
     }
+
+    /* Lisp func */
     else if (callable->type == LAMBDA){
         lisp_lambda *lambda = &(callable->value.l);
         if (app->nparams != lambda->nparams){
@@ -34,7 +37,8 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         /* Extend env */
         lisp_env *locals = create_env(env);
         for (size_t i=0; i<lambda->nparams; i++){
-            set_env(locals, lambda->param_names[i], eval_expression(app->params[i], env, err));
+            release(set_env(locals, lambda->param_names[i], 
+                eval_expression(app->params[i], env, err)));
         }
 
         /* Eval body */
@@ -44,8 +48,8 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         destroy_env(locals);
     }
     else {
-        ERROR("CANNOT CALL obj %p", callable);
         lisp_print(callable);
+        ERROR("CANNOT CALL obj %p", callable);
     }
 
     release(callable);
@@ -61,9 +65,16 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
             value = expr->value.selfeval.value;
             return retain(value);
         case LOOKUP:
-            return lookup(env, expr->value.lookup.name);
+            value = lookup(env, expr->value.lookup.name);
+            if (! value){
+                ERROR("Unknow identifier %s", expr->value.lookup.name);
+            }
+            return retain(value);
         case APPLICATION:
             return apply(&(expr->value.application), env, err);
+        case DEFINE:
+            release(set_env(env, expr->value.define.name, eval_expression(
+                expr->value.define.expr, env, err)));
         default:
             return NIL;
     }

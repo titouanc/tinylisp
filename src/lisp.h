@@ -2,16 +2,14 @@
 #define DEFINE_TINYLISP_HEADER
 
 /*
- * The main lisp header
+ * The main interpreter header
  */
 
 #include "env.h"
 #include "eval.h"
 
-/*
- * Lisp procedure to quit the interpreter
- */
-lisp_obj *lisp_exit(size_t argc, lisp_obj *argv);
+/* Exit procedure */
+extern lisp_obj lisp_exit;
 
 /*
  * Populate env with standard functions

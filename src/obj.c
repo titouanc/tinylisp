@@ -41,6 +41,7 @@ static void destroy_obj(lisp_obj *obj)
 
     /* Clean area */
     memset(obj, 0, sizeof(lisp_obj));
+
     free(obj);
 }
 

@@ -37,7 +37,7 @@ lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value)
         }
     }
 
-    /* If not found, and there are subsequent env buckets set in following */
+    /* If not found, and there are subsequent env buckets: set in following */
     if (env->next){
         return set_env(env->next, name, value);
     } 

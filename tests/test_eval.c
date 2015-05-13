@@ -47,6 +47,7 @@ TEST(test_env_lookup, {
 
     lisp_obj *res = eval("key", env, NULL);
     ASSERT(res == obj);
+    release(res);
 
     destroy_env(env);
 })
@@ -104,6 +105,36 @@ TEST(test_eval_long_sum, {
     destroy_env(env);
 })
 
+TEST(test_eval_define, {
+    lisp_env *env = create_env(NULL);
+    lisp_obj *res = eval("(define a 3)", env, NULL);
+    ASSERT(res == NIL);
+
+    lisp_obj *a = lookup(env, "a");
+    ASSERT(a != NULL);
+    ASSERT(a->type == INT);
+    ASSERT(a->value.i == 3);
+
+    destroy_env(env);
+})
+
+TEST(test_eval_define_and_call, {
+    lisp_env *env = create_env(NULL);
+    set_env(env, "*", &lisp_mul);
+    lisp_obj *res = eval("(define sq (lambda (x) (* x x)))", env, NULL);
+    ASSERT(res == NIL);
+
+    ASSERT(lookup(env, "sq") != NULL);
+
+    res = eval("(sq 3)", env, NULL);
+    ASSERT(res != NULL);
+    ASSERT(res->type == INT);
+    ASSERT(res->value.i == 9);
+    release(res);
+
+    destroy_env(env);
+})
+
 SUITE(
     ADDTEST(test_eval_int),
     ADDTEST(test_eval_float),
@@ -112,5 +143,7 @@ SUITE(
     ADDTEST(test_eval_application),
     ADDTEST(test_eval_lambda),
     ADDTEST(test_eval_call_lambda),
-    ADDTEST(test_eval_long_sum))
+    ADDTEST(test_eval_long_sum),
+    ADDTEST(test_eval_define),
+    ADDTEST(test_eval_define_and_call))
 
