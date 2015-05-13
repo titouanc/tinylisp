@@ -21,33 +21,25 @@ lisp_env *create_env(lisp_env *parent)
     return res;
 }
 
-void set_env(lisp_env *env, const char *name, lisp_obj *value)
+lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value)
 {
     assert(env != NULL);
     assert(name != NULL);
     assert(value != NULL);
 
-    /* Hold ref for this obj if not owned by someone else */
-    if (value->env == NULL){
-        value->env = (void *) env;
-    }
-
     /* If an object already has this name in this env, drop ref and detroy, 
        then replace by new object */
     for (size_t i=0; i<env->used; i++){
         if (strcmp(env->names[i], name) == 0){
-            if (env->values[i]->env == env){
-                env->values[i]->env = NULL;
-                destroy_obj(env->values[i]);
-            }
-            env->values[i] = value;
-            return;
+            release(env->values[i]);
+            env->values[i] = retain(value);
+            return value;
         }
     }
 
     /* If not found, and there are subsequent env buckets set in following */
     if (env->next){
-        set_env(env->next, name, value);
+        return set_env(env->next, name, value);
     } 
 
     /* Otherwise insert here */
@@ -58,9 +50,11 @@ void set_env(lisp_env *env, const char *name, lisp_obj *value)
         }
 
         env->names[env->used] = duplicate_string(name, LISP_MAX_NAME_SIZE);
-        env->values[env->used] = value;
+        env->values[env->used] = retain(value);
         env->used ++;
     }
+
+    return value;
 }
 
 lisp_env *destroy_env(lisp_env *env)
@@ -73,12 +67,11 @@ lisp_env *destroy_env(lisp_env *env)
 
     lisp_env *parent = env->parent;
     for (size_t i=0; i<env->used; i++){
+        release(env->values[i]);
         free(env->names[i]);
-        if (env->values[i]->env == env){
-            env->values[i]->env = NULL;
-            destroy_obj(env->values[i]);
-        }
     }
+
+    memset(env, 0, sizeof(lisp_env));
     free(env);
     return parent;
 }

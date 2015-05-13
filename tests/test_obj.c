@@ -4,9 +4,10 @@
 
 TEST(test_create_int, {
     lisp_obj *i = lisp_int(42);
+    ASSERT(i->refcount == 0);
     ASSERT(i->type == INT);
     ASSERT(i->value.i == 42);
-    destroy_obj(i);
+    release(i);
 })
 
 TEST(test_add_ints, {
@@ -21,9 +22,9 @@ TEST(test_add_ints, {
     ASSERT(sum->type == INT);
     ASSERT(sum->value.i == 42);
     
-    destroy_obj(sum);
-    destroy_obj(i);
-    destroy_obj(j);
+    release(sum);
+    release(i);
+    release(j);
 })
 
 TEST(test_add_intfloat, {
@@ -38,9 +39,9 @@ TEST(test_add_intfloat, {
     ASSERT(sum->type == FLOAT);
     ASSERT(sum->value.f == 42.0);
     
-    destroy_obj(sum);
-    destroy_obj(i);
-    destroy_obj(j);
+    release(sum);
+    release(i);
+    release(j);
 })
 
 TEST(test_add_floats, {
@@ -55,9 +56,9 @@ TEST(test_add_floats, {
     ASSERT(sum->type == FLOAT);
     ASSERT(sum->value.f == 42.0);
     
-    destroy_obj(sum);
-    destroy_obj(i);
-    destroy_obj(j);
+    release(sum);
+    release(i);
+    release(j);
 })
 
 SUITE(

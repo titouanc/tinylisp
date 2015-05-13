@@ -19,7 +19,7 @@ int main(int argc, const char **argv)
         printf(" => ");
         lisp_print(res);
         printf("\n");
-        destroy_obj(res);
+        release(res);
         printf("(lisp) > "); fflush(stdout);
     }
     printf("\n");

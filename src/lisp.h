@@ -6,6 +6,7 @@
  */
 
 #include "env.h"
+#include "eval.h"
 
 /*
  * Lisp procedure to quit the interpreter

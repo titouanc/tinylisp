@@ -1,14 +1,16 @@
 #ifndef DEFINE_EXPR_HEADER
 #define DEFINE_EXPR_HEADER
 
+typedef struct lisp_expr_t lisp_expr;
+
 #include "obj.h"
 
 typedef enum {
+    NO_ERR=0,
     UNEXPECTED_TOKEN
 } lisp_err;
 
 /* Expression ADT */
-typedef struct lisp_expr_t lisp_expr;
 typedef enum {
     SELFEVAL,
     APPLICATION,
@@ -34,6 +36,7 @@ typedef struct {
 
 /* A lisp expression has a type and a value */
 struct lisp_expr_t {
+    int refcount;
     lisp_expr_type type;
     union {
         lisp_expr_selfeval    selfeval;
@@ -42,8 +45,14 @@ struct lisp_expr_t {
     } value;
 };
 
+/* Create a new expression of given type */
+lisp_expr *create_expr(lisp_expr_type type);
+
 /* Free an entire expression tree */
-void destroy_expr(lisp_expr *expr);
+lisp_expr *release_expr(lisp_expr *expr);
+
+/* Retain an entire expression tree */
+lisp_expr *retain_expr(lisp_expr *expr);
 
 /* Writes out expression in lisp format to stdout */
 void dump_expr(lisp_expr *expr);

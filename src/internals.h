@@ -5,7 +5,10 @@
 
 /* Internal functions */
 
-/* (+ op [op ...]) */
+/* (+ operand [operands ...]) */
 extern lisp_obj lisp_add;
+
+/* (- operand [operands ...]) */
+extern lisp_obj lisp_sub;
 
 #endif

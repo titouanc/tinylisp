@@ -7,7 +7,7 @@
 
 lisp_env *create_env(lisp_env *parent);
 
-void set_env(lisp_env *env, const char *name, lisp_obj *value);
+lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value);
 
 lisp_env *destroy_env(lisp_env *env);
 

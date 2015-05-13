@@ -18,10 +18,11 @@ extern const lisp_obj false_obj;
 
 typedef lisp_obj *(*lisp_proc)(size_t argc, lisp_obj **argv);
 
+#include "expr.h"
 struct lisp_lambda_t {
-    size_t nparams;
+    size_t     nparams;
     char **param_names;
-    lisp_obj *(*proc)(lisp_env *);
+    lisp_expr    *body;
 };
 
 
@@ -36,16 +37,17 @@ typedef enum {
 } lisp_obj_type;
 
 typedef union {
-    double f;
-    long int i;
-    char *s;
+    double      f;
+    long int    i;
+    char       *s;
     lisp_lambda l;
-    lisp_proc p;
+    lisp_proc   p;
 } lisp_obj_val;
 
 struct lisp_obj_t {
-    bool       _static; /* Is this attribute static (eg: not dyn allocated) ? */
-    void          *env; /* Which env does it belongs to (if any) ? */
+    int       refcount; /* Who references this object ?
+                           Special values (constants) have refcount=-42 
+                           Ohterwise refcount>=0 */
     lisp_obj_type type; /* What kind of object */
     lisp_obj_val value; /* Its actual value */
 };
@@ -55,8 +57,11 @@ struct lisp_obj_t {
 #define lisp_internal(val) create_obj(PROC, (lisp_obj_val)((lisp_proc)(val)))
 
 lisp_obj *create_obj(lisp_obj_type type, lisp_obj_val value);
+lisp_obj *create_empty_obj(lisp_obj_type type);
 
-void destroy_obj(lisp_obj *obj);
+lisp_obj *retain(lisp_obj *obj);
+
+lisp_obj *release(lisp_obj *obj);
 
 void lisp_print(lisp_obj *obj);
 
