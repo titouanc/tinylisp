@@ -1,0 +1,3 @@
+[submodule "lighttest2"]
+	path = lighttest2
+	url = https://github.com/titouanc/lighttest2
