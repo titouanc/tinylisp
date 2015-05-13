@@ -1,4 +1,4 @@
-#include "lighttest2/lighttest2.h"
+#include "lighttest2.h"
 #include "env.h"
 #include "internals.h"
 
