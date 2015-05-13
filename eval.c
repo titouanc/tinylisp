@@ -1,21 +1,32 @@
 #include "eval.h"
+#include "utils.h"
 #include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <assert.h>
 
-//#define DEBUG(fmt,...) printf("\033[34;1m[DEBUG]\033[0m " fmt "\n", #__VA_ARGS__)
-#define DEBUG(fmt,...)
+typedef enum {
+    SELFEVAL,
+    APPLICATION
+} lisp_expr_type;
 
-static inline void ERROR(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    printf("\033[31;1m[ERROR]\033[0m ");
-    vprintf(fmt, args);
-    va_end(args);
-    exit(1);
-}
+typedef struct lisp_expr_t lisp_expr;
+
+typedef struct {
+    lisp_expr *proc;
+    size_t nparams;
+    lisp_expr **params;
+} lisp_expr_application;
+
+typedef struct {
+    lisp_obj *value;
+} lisp_expr_selfeval;
+
+struct lisp_expr_t {
+    lisp_expr_type type;
+    union {
+        lisp_expr_selfeval selfeval;
+        lisp_expr_application application;
+    } value;
+};
 
 static lisp_obj *eval_internal(
     const char *str, 
@@ -64,7 +75,6 @@ static lisp_obj *eval_application(
 
     str = ignore(*endptr);
     for (i=0; i<1000 && *str != ')'; i++){
-        DEBUG("Fetching arg %d (rest=\"%s\")", i, str);
         if (*str == '\0')
             ERROR("Unexpected end of string");
         params[i] = eval_internal(str, endptr, env, err);

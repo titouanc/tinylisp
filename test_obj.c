@@ -1,5 +1,6 @@
 #include "lighttest2/lighttest2.h"
 #include "env.h"
+#include "internals.h"
 
 TEST(test_create_int, {
     lisp_obj *i = lisp_int(42);
@@ -16,7 +17,7 @@ TEST(test_add_ints, {
     args[0] = i;
     args[1] = j;
 
-    lisp_obj *sum = add(2, args);
+    lisp_obj *sum = lisp_add.value.p(2, args);
     ASSERT(sum->type == INT);
     ASSERT(sum->value.i == 42);
     
@@ -33,7 +34,7 @@ TEST(test_add_intfloat, {
     args[0] = i;
     args[1] = j;
 
-    lisp_obj *sum = add(2, args);
+    lisp_obj *sum = lisp_add.value.p(2, args);
     ASSERT(sum->type == FLOAT);
     ASSERT(sum->value.f == 42.0);
     
@@ -50,7 +51,7 @@ TEST(test_add_floats, {
     args[0] = i;
     args[1] = j;
 
-    lisp_obj *sum = add(2, args);
+    lisp_obj *sum = lisp_add.value.p(2, args);
     ASSERT(sum->type == FLOAT);
     ASSERT(sum->value.f == 42.0);
     

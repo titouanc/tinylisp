@@ -1,6 +1,7 @@
 #include "lighttest2/lighttest2.h"
 #include "env.h"
 #include "eval.h"
+#include "internals.h"
 
 TEST(test_eval_int, {
     lisp_env *env = create_env(NULL);
@@ -45,7 +46,7 @@ TEST(test_env_lookup, {
 
 TEST(test_eval_application, {
     lisp_env *env = create_env(NULL);
-    set_env(env, "+", lisp_internal(add));
+    set_env(env, "+", &lisp_add);
 
     lisp_obj *res = eval("(+ 27 15)", env, NULL);
     ASSERT(res != NULL);

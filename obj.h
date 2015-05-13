@@ -2,6 +2,7 @@
 #define DEFINE_OBJ_HEADER
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef struct lisp_obj_t lisp_obj;
 typedef struct lisp_env_t lisp_env;
@@ -43,6 +44,7 @@ typedef union {
 } lisp_obj_val;
 
 struct lisp_obj_t {
+    bool _static;
     lisp_obj_type type;
     lisp_obj_val value;
 };
@@ -56,8 +58,5 @@ lisp_obj *create_obj(lisp_obj_type type, lisp_obj_val value);
 void destroy_obj(lisp_obj *obj);
 
 void lisp_print(lisp_obj *obj);
-
-/* Internals */
-lisp_obj *add(size_t argc, lisp_obj **argv);
 
 #endif
