@@ -19,7 +19,7 @@ extern const lisp_obj false_obj;
 typedef lisp_obj *(*lisp_proc)(size_t argc, lisp_obj **argv);
 
 struct lisp_lambda_t {
-    size_t n_params;
+    size_t nparams;
     char **param_names;
     lisp_obj *(*proc)(lisp_env *);
 };
@@ -44,9 +44,10 @@ typedef union {
 } lisp_obj_val;
 
 struct lisp_obj_t {
-    bool _static;
-    lisp_obj_type type;
-    lisp_obj_val value;
+    bool       _static; /* Is this attribute static (eg: not dyn allocated) ? */
+    void          *env; /* Which env does it belongs to (if any) ? */
+    lisp_obj_type type; /* What kind of object */
+    lisp_obj_val value; /* Its actual value */
 };
 
 #define lisp_int(val) create_obj(INT, (lisp_obj_val)((long int)(val)))

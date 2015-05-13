@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-static const bool enable_debug = true;
+static const bool enable_debug = false;
 
 char *duplicate_string(const char *string, int maxsize)
 {
@@ -28,7 +28,8 @@ void ERROR(const char *fmt, ...)
     va_start(args, fmt);
     fprintf(stderr, "\033[31;1m[ERROR]\033[0m ");
     vfprintf(stderr, fmt, args);
-    fprintf(stderr, "\n");
+    if (! strchr(fmt, '\n'))
+        fprintf(stderr, "\n");
     va_end(args);
     exit(1);
 }
@@ -40,7 +41,8 @@ void DEBUG(const char *fmt, ...)
         va_start(args, fmt);
         fprintf(stderr, "\033[34;1m[DEBUG]\033[0m ");
         vfprintf(stderr, fmt, args);
-        fprintf(stderr, "\n");
+        if (! strchr(fmt, '\n'))
+            fprintf(stderr, "\n");
         va_end(args);
     }
 }

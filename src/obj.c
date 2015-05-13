@@ -14,14 +14,16 @@ lisp_obj *create_obj(lisp_obj_type type, lisp_obj_val value)
     assert(res != NULL);
     res->type = type;
     res->value = value;
+    res->env = NULL;
     return res;
 }
 
 void destroy_obj(lisp_obj *obj)
 {
-    if (! obj->_static){
-        free(obj);
+    if (obj->_static || obj->env != NULL){
+        return;
     }
+    free(obj);
 }
 
 void lisp_print(lisp_obj *obj)

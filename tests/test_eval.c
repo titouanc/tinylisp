@@ -6,10 +6,17 @@
 TEST(test_eval_int, {
     lisp_env *env = create_env(NULL);
     lisp_obj *res = eval("3", env, NULL);
+
+    PRINT("test_eval_int 1");
+
     ASSERT(res != NULL);
     ASSERT(res->type == INT);
     ASSERT(res->value.i == 3);
+
+    PRINT("test_eval_int 2");
     destroy_obj(res);
+    PRINT("test_eval_int 3");
+
     destroy_env(env);
 })
 

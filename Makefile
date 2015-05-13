@@ -1,5 +1,5 @@
 TARGET = build/tinylisp
-SRC = env.c eval.c internals.c lisp.c obj.c utils.c
+SRC = env.c eval.c internals.c lisp.c obj.c utils.c expr.c
 
 SOURCES = $(addprefix src/,${SRC})
 TESTS = $(subst .c,,$(shell ls tests/*.c))
@@ -28,6 +28,9 @@ test: ${TESTS}
 
 memtest: ${TESTS}
 	for f in $^; do valgrind --leak-check=full ./$$f; done
+
+vtest: ${TESTS}
+	for f in $^; do ./$$f -v; done
 
 clean:
 	rm -f build/*.o
