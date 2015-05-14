@@ -26,10 +26,10 @@ void ERROR(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    fprintf(stderr, "\033[31;1m[ERROR]\033[0m ");
-    vfprintf(stderr, fmt, args);
+    printf("\033[31;1m[ERROR]\033[0m ");
+    vprintf(fmt, args);
     if (! strchr(fmt, '\n'))
-        fprintf(stderr, "\n");
+        printf("\n");
     va_end(args);
     exit(1);
 }
@@ -39,10 +39,10 @@ void DEBUG(const char *fmt, ...)
     if (enable_debug){
         va_list args;
         va_start(args, fmt);
-        fprintf(stderr, "\033[34;1m[DEBUG]\033[0m ");
-        vfprintf(stderr, fmt, args);
+        printf("\033[34;1m[DEBUG]\033[0m ");
+        vprintf(fmt, args);
         if (! strchr(fmt, '\n'))
-            fprintf(stderr, "\n");
+            printf("\n");
         va_end(args);
     }
 }

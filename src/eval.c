@@ -14,7 +14,9 @@ static lisp_obj *make_lambda(lisp_expr *expr, lisp_env *context)
 lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
 {
     lisp_obj *callable = eval_expression(app->proc, env, err);
-    assert(callable != NULL);
+    if (! callable){
+        return NULL;
+    }
 
     lisp_obj *res = NIL;
 
@@ -23,7 +25,15 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         /* Eval args */
         lisp_obj **args = calloc(app->nparams, sizeof(lisp_obj*));
         for (size_t i=0; i<app->nparams; i++){
-            args[i] = eval_expression(app->params[i], env, err);
+            lisp_obj *arg = eval_expression(app->params[i], env, err);
+            if (! arg){
+                for (size_t j=0; j<i; j++){
+                    release(args[j]);
+                }
+                free(args);
+                return NULL;
+            }
+            args[i] = arg;
         }
 
         /* Eval internal */
@@ -50,9 +60,13 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         /* Extend env */
         lisp_env *locals = create_env(lambda->context);
         for (size_t i=0; i<lambda_expr->nparams; i++){
-            DEBUG("Extend env with %s\n", lambda_expr->param_names[i]);
-            release(set_env(locals, lambda_expr->param_names[i], 
-                eval_expression(app->params[i], env, err)));
+            lisp_obj *param = eval_expression(app->params[i], env, err);
+            if (! param){
+                release_env(locals);
+                return NULL;
+            }
+            DEBUG("Extend env with %s", lambda_expr->param_names[i]);
+            release(set_env(locals, lambda_expr->param_names[i], param));
         }
 
         if (enable_debug){
@@ -130,6 +144,7 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
 lisp_obj *eval(const char *str, lisp_env *env, lisp_err *err)
 {
     const char *end = str;
+    DEBUG("EVAL \"%s\"", str);
     lisp_expr *expr = analyze(str, &end, err);
     if (expr){
         lisp_obj *res = eval_expression(expr, env, err);

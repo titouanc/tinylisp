@@ -241,16 +241,15 @@ static lisp_expr *analyze_constant(
     res->value.selfeval.value = NIL;
 
     if (str[1] == 't'){
-        *endptr = str+2;
         res->value.selfeval.value = TRUE;
     }
     else if (str[1] == 'f'){
-        *endptr = str+2;
         res->value.selfeval.value = FALSE;
     }
     else if (str[1] != 'n'){
         raise_error(err, UNEXPECTED_TOKEN, "Unexpected token '%c' for constant value", str[1]);
     }
+    *endptr = str + 2;
     return res;
 }
 
@@ -411,8 +410,6 @@ static lisp_expr *analyze_string(
 lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
 {
     lisp_expr *res = NULL;
-
-    DEBUG("ANALYZE \"%s\"", str);
     str = ignore(str);
     if (is_number(*str) || (*str == '-' && is_number(str[1]))){
         res = analyze_number(str, endptr, err);
