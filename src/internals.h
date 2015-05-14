@@ -6,15 +6,22 @@
 /* Internal functions */
 
 /* (+ operand [operands ...]) */
-extern lisp_obj lisp_add;
+extern const lisp_obj lisp_add;
 
 /* (- operand [operands ...]) */
-extern lisp_obj lisp_sub;
+extern const lisp_obj lisp_sub;
 
 /* (* operand [operands ...]) */
-extern lisp_obj lisp_mul;
+extern const lisp_obj lisp_mul;
 
 /* (refcount obj) -> number of context that reference obj */
-extern lisp_obj lisp_refcount;
+extern const lisp_obj lisp_refcount;
+
+/* (display [objs ...]) -> print objs to stdout */
+extern const lisp_obj lisp_display;
+
+extern const lisp_obj lisp_lt;
+
+extern const lisp_obj lisp_dump_env;
 
 #endif

@@ -28,7 +28,7 @@ lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value)
     assert(name != NULL);
     assert(value != NULL);
 
-    /* If an object already has this name in this env, drop ref and detroy, 
+    /* If an object already has this name in this env, drop ref 
        then replace by new object */
     for (size_t i=0; i<env->used; i++){
         if (strcmp(env->names[i], name) == 0){
@@ -63,6 +63,10 @@ static lisp_env *destroy_env(lisp_env *env)
     assert(env != NULL);
     assert(env->refcount == 0);
 
+    if (enable_debug){
+        printf("DESTROY \033[31mENV FRAME\033[0m id=%p\n", env);
+    }
+
     if (env->next){
         release_env(env->next);
     }
@@ -85,6 +89,7 @@ static lisp_env *destroy_env(lisp_env *env)
 lisp_env *release_env(lisp_env *env)
 {
     assert(env != NULL);
+    DEBUG("release ENV %p (refcount: %d--)\n", env, env->refcount);
     if (env->refcount == 0){
         destroy_env(env);
         return NULL;
@@ -102,6 +107,7 @@ lisp_env *retain_env(lisp_env *env)
 
 lisp_obj *lookup(lisp_env *env, const char *name)
 {
+    assert(env != NULL);
     for (size_t i=0; i<env->used; i++){
         if (strcmp(env->names[i], name) == 0){
             return env->values[i];
@@ -119,15 +125,40 @@ lisp_obj *lookup(lisp_env *env, const char *name)
     return res;
 }
 
-void dump_env(lisp_env *env)
+void clear_env(lisp_env *env)
 {
     for (size_t i=0; i<env->used; i++){
-        printf("  %s: ", env->names[i]);
-        lisp_print(env->values[i]);
-        printf("\n");
+        release(env->values[i]);
+        free(env->names[i]);
+        env->names[i] = NULL;
+        env->values[i] = NULL;
     }
-    if (env->next)
-        dump_env(env->next);
-    if (env->parent)
-        dump_env(env->parent);
+    env->used = 0;
+
+    if (env->next){
+        release_env(env->next);
+        env->next = NULL;
+    }
+}
+
+int dump_env(lisp_env *env)
+{
+    assert(env != NULL);
+    int indent = 0;
+    if (env->parent){
+        indent = dump_env(env->parent);
+
+    }
+    do {
+        for (size_t i=0; i<env->used; i++){
+            for (int j=0; j<indent; j++){
+                printf("  ");
+            }
+            printf("  %s: ", env->names[i]);
+            lisp_print(env->values[i]);
+            printf("\n");
+        }
+        env = env->next;
+    } while (env);
+    return indent + 1;
 }

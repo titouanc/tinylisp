@@ -21,7 +21,8 @@ typedef enum {
     WRONG_ARITY,
     MISSING_ARGNAMES,
     UNTERMINATED_EXPRESSION,
-    NOT_CALLABLE
+    NOT_CALLABLE,
+    NO_EXPRESSION
 } lisp_err_type;
 
 typedef struct {
@@ -29,7 +30,11 @@ typedef struct {
     const char *description;
 } lisp_err;
 
+/* Fill err structure with type and message (description string will be reallocated) */
 void raise_error(lisp_err *err, lisp_err_type type, const char *fmt, ...);
+
+/* Cleanup dynamically allocated memory in err, if any */
+void cleanup_error(lisp_err *err);
 
 /* Expression ADT */
 typedef enum {

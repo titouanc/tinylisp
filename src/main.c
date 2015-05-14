@@ -18,7 +18,8 @@ int main(int argc, const char **argv)
 
         lisp_obj *res = eval(buffer, env, &error);
         if (error.type != OK){
-            printf("ERROR: %s\n", error.description);
+            if (error.type != NO_EXPRESSION)
+                printf("ERROR: %s\n", error.description);
         }
         else {
             printf(" => ");
@@ -29,8 +30,11 @@ int main(int argc, const char **argv)
         error.type = OK;
         printf("(lisp) > "); fflush(stdout);
     }
-    printf("\n");
+    printf("\nGoodbye !\n");
 
+    clear_env(env);
     release_env(env);
+    cleanup_error(&error);
+    
     return 0;
 }

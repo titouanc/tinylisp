@@ -24,6 +24,15 @@ void raise_error(lisp_err *err, lisp_err_type type, const char *fmt, ...)
     }
 }
 
+void cleanup_error(lisp_err *err)
+{
+    if (err != NULL){
+        if (err->description != NULL){
+            free((void *)err->description);
+        }
+    }
+}
+
 lisp_expr *create_expr(lisp_expr_type type)
 {
     lisp_expr *res = calloc(1, sizeof(lisp_expr));
@@ -102,7 +111,7 @@ lisp_expr *retain_expr(lisp_expr *expr)
 
 static void dump_application(lisp_expr_application *app)
 {
-    printf("(");
+    printf("APPLY(");
     dump_expr(app->proc);
     for (size_t i=0; i<app->nparams; i++){
         printf(" ");
@@ -113,31 +122,34 @@ static void dump_application(lisp_expr_application *app)
 
 static void dump_lambda(lisp_expr_lambda *lambda)
 {
-    printf("(lambda (");
+    printf("(");
     for (size_t i=0; i<lambda->nparams; i++){
         if (i > 0) printf(" ");
         printf("%s", lambda->param_names[i]);
     }
-    printf(") ");
+    printf(") -> {");
     dump_expr(lambda->body);
-    printf(")");
+    printf("}");
 }
 
 void dump_expr(lisp_expr *expr)
 {
     assert(expr != NULL);
+
     switch (expr->type){
         case MKLAMBDA:
             dump_lambda(&expr->value.mklambda);
             break;
         case SELFEVAL:
+            printf("SELFEVAL[");
             lisp_print(expr->value.selfeval.value);
+            printf("]");
             break;
         case APPLICATION:
             dump_application(&(expr->value.application));
             break;
         case LOOKUP:
-            printf("%s", (expr->value.lookup.name));
+            printf("LOOKUP[%s]", (expr->value.lookup.name));
             break;
         case DEFINE:
             printf("(%s %s ", expr->value.define.overwrite ? "set!" : "define", expr->value.define.name);
@@ -145,14 +157,12 @@ void dump_expr(lisp_expr *expr)
             printf(")");
             break;
         case CONDITION:
-            printf("(if ");
             dump_expr(expr->value.condition.condition);
-            printf(" ");
+            printf(" ? <");
             dump_expr(expr->value.condition.consequence);
-            printf(" ");
+            printf("> : <");
             dump_expr(expr->value.condition.alternative);
-            printf(")");
-
+            printf(">");
     }
 }
 
@@ -338,6 +348,45 @@ static lisp_expr *analyze_define(
     return res;
 }
 
+static lisp_expr *analyze_condition(
+    const char *str,
+    const char **endptr,
+    lisp_err *err
+){
+    lisp_expr *cond = analyze(str, endptr, err);
+    if (! cond)
+        return NULL;
+
+    lisp_expr *cons = analyze(*endptr, endptr, err);
+    if (! cons){
+        release_expr(cond);
+        return NULL;
+    }
+
+    lisp_expr *alt = NULL;
+
+    /* No alternative */
+    if (**endptr == ')'){
+        alt = create_expr(SELFEVAL);
+        alt->value.selfeval.value = NIL;
+    } else {
+        alt = analyze(*endptr, endptr, err);
+        if (alt == NULL){
+            release_expr(cond);
+            release_expr(cons);
+            return NULL;
+        }
+    }
+
+    *endptr = *endptr+1;
+
+    lisp_expr *res = create_expr(CONDITION);
+    res->value.condition.condition = cond;
+    res->value.condition.consequence = cons;
+    res->value.condition.alternative = alt;
+    return res;
+}
+
 #define is_number(x) ('0' <= x && x <= '9')
 lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
 {
@@ -351,16 +400,22 @@ lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
     else if (*str == '('){
         if (strncmp(str+1, "lambda ", 7) == 0){
             res = analyze_lambda(str+8, endptr, err);
-        } 
+        }
         else if (strncmp(str+1, "define ", 7) == 0){
             res = analyze_define(str+8, endptr, err);
-        } 
+        }
+        else if (strncmp(str+1, "if ", 3) == 0){
+            res = analyze_condition(str+3, endptr, err);
+        }
         else {
             res = analyze_application(str, endptr, err);
         }
     }
     else if (*str == '#'){
         res = analyze_constant(str, endptr, err);
+    }
+    else if (*str == '\0'){
+        raise_error(err, NO_EXPRESSION, "No expression given");
     }
     else {
         res = analyze_lookup(str, endptr, err);

@@ -56,7 +56,7 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         }
 
         if (enable_debug){
-            printf("CALL ");
+            printf("\033[1mCALL\033[0m ");
             dump_expr(lambda_expr->body);
             printf(" with env\n");
             dump_env(locals);
@@ -78,14 +78,27 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
     return res;
 }
 
+lisp_obj *eval_condition(lisp_expr_condition *expr, lisp_env *env, lisp_err *err)
+{
+    lisp_obj *cond = eval_expression(expr->condition, env, err);
+    if (cond == NULL){
+        return NULL;
+    }
+
+    lisp_obj *res = eval_expression(
+        (cond != NIL && cond != FALSE) ? expr->consequence : expr->alternative,
+        env, err);
+    release(cond);
+    return res;
+}
+
 lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
 {
     lisp_obj *value = NULL;
     assert(expr != NULL);
     switch (expr->type){
         case MKLAMBDA:
-            value = make_lambda(expr, env);
-            return value;
+            return make_lambda(expr, env);
         case SELFEVAL:
             value = expr->value.selfeval.value;
             if (! value){
@@ -95,12 +108,14 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
         case LOOKUP:
             value = lookup(env, expr->value.lookup.name);
             if (! value){
-                raise_error(err, UNKNOW_IDENTIFIER, "Unknow identifier %s", expr->value.lookup.name);
+                raise_error(err, UNKNOW_IDENTIFIER, "Unknow identifier \"%s\"", expr->value.lookup.name);
                 return NULL;
             }
             return retain(value);
         case APPLICATION:
             return apply(&(expr->value.application), env, err);
+        case CONDITION:
+            return eval_condition(&(expr->value.condition), env, err);
         case DEFINE:
             value = eval_expression(expr->value.define.expr, env, err);
             if (! value){

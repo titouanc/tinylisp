@@ -65,7 +65,9 @@ void lisp_print(lisp_obj *obj)
         printf("#<Procedure>");
     }
     else if (obj->type == LAMBDA){
-        printf("#<Lambda %lu params>", obj->value.l.declaration->value.mklambda.nparams);
+        printf("#<Lambda nparams=%lu env=%p>", 
+            obj->value.l.declaration->value.mklambda.nparams,
+            obj->value.l.context);
     }
     else if (obj == TRUE){printf("#t");}
     else if (obj == FALSE){printf("#f");}
