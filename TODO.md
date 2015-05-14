@@ -1,11 +1,11 @@
 # Core / Language
 
 * [X] Strings
-* [ ] Pairs
+* [X] Pairs
 * [ ] Continuations
 * [ ] Keyword args
 * [ ] Allocator for lisp_env, lisp_expr, lisp_obj
-* [ ] `(define (func args) body)` form
+* [X] `(define (func args) body)` form
 * [ ] `let`
 * [ ] `set!`
 

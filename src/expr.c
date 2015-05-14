@@ -281,44 +281,36 @@ static lisp_expr *analyze_lambda(
     str = ignore(str);
     *endptr = str;
 
-    if (*str != '('){
-        raise_error(err, MISSING_ARGNAMES, "Missing lambda param list");
+    char param_names[LISP_MAX_PARAMS][LISP_MAX_NAME_SIZE];
+    int i, n;
+    for (n=0; n<LISP_MAX_PARAMS-1 && *str != ')'; n++){
+        for (i=0; i<LISP_MAX_NAME_SIZE && is_name_char(str[i]); i++){
+            param_names[n][i] = str[i];
+        }
+        param_names[n][i] = '\0';
+        *endptr = str+i;
+        str = ignore(*endptr);
+    }
+
+    if (*str != ')'){
+        raise_error(err, UNTERMINATED_EXPRESSION, "Unterminated argument names list");
         return NULL;
     }
-    else {
-        str++;
-        char param_names[LISP_MAX_PARAMS][LISP_MAX_NAME_SIZE];
-        int i, n;
-        for (n=0; n<LISP_MAX_PARAMS-1 && *str != ')'; n++){
-            for (i=0; i<LISP_MAX_NAME_SIZE && is_name_char(str[i]); i++){
-                param_names[n][i] = str[i];
-            }
-            param_names[n][i] = '\0';
-            *endptr = str+i;
-            str = ignore(*endptr);
-        }
 
-        if (*str != ')'){
-            raise_error(err, UNTERMINATED_EXPRESSION, "Unterminated argument names list");
-            return NULL;
-        }
-
-        lisp_expr *body = analyze(str+1, endptr, err);
-        if (body == NULL){
-            return NULL;
-        }
-        *endptr = *endptr + 1;
-
-        lisp_expr *res = create_expr(MKLAMBDA);
-        res->value.mklambda.body = body;
-        res->value.mklambda.nparams = n;
-        res->value.mklambda.param_names = calloc(n, sizeof(char*));
-        for (int i=0; i<n; i++){
-            res->value.mklambda.param_names[i] = duplicate_string(param_names[i], LISP_MAX_NAME_SIZE);
-        }
-        return res;
+    lisp_expr *body = analyze(str+1, endptr, err);
+    if (body == NULL){
+        return NULL;
     }
-    return NULL;
+    *endptr = *endptr + 1;
+
+    lisp_expr *res = create_expr(MKLAMBDA);
+    res->value.mklambda.body = body;
+    res->value.mklambda.nparams = n;
+    res->value.mklambda.param_names = calloc(n, sizeof(char*));
+    for (int i=0; i<n; i++){
+        res->value.mklambda.param_names[i] = duplicate_string(param_names[i], LISP_MAX_NAME_SIZE);
+    }
+    return res;
 }
 
 static lisp_expr *analyze_define(
@@ -329,16 +321,28 @@ static lisp_expr *analyze_define(
     char name[LISP_MAX_NAME_SIZE];
     int i;
     str = ignore(str);
+
+    /* (define (func args) body) syntax */
+    bool is_lambda = false;
+    if (*str == '('){
+        is_lambda = true;
+        str++;
+    }
+
     for (i=0; i<LISP_MAX_NAME_SIZE-1 && is_name_char(str[i]); i++){
         name[i] = str[i];
     }
     name[i] = '\0';
     str = ignore(str+i);
 
-    lisp_expr *expr = analyze(str, endptr, err);
+    lisp_expr *expr = is_lambda ? 
+        analyze_lambda(str, endptr, err):
+        analyze(str, endptr, err);
+
     if (expr == NULL){
         return NULL;
     }
+
     lisp_expr *res = create_expr(DEFINE);
     res->value.define.expr = expr;
     res->value.define.name = duplicate_string(name, LISP_MAX_NAME_SIZE);
@@ -414,9 +418,16 @@ lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
     if (is_number(*str) || (*str == '-' && is_number(str[1]))){
         res = analyze_number(str, endptr, err);
     }
+
+    /* Special form or application */
     else if (*str == '('){
         if (strncmp(str+1, "lambda ", 7) == 0){
-            res = analyze_lambda(str+8, endptr, err);
+            str = ignore(str+8);
+            if (*str != '('){
+                raise_error(err, MISSING_ARGNAMES, "Missing argument list");
+            } else {
+                res = analyze_lambda(str + 1, endptr, err);
+            }
         }
         else if (strncmp(str+1, "define ", 7) == 0){
             res = analyze_define(str+8, endptr, err);

@@ -179,6 +179,16 @@ ENVTEST(test_eval_string, {
     release(res);
 })
 
+ENVTEST(test_eval_defn, {
+    lisp_obj *res = eval("(define (identity x) x)", env, NULL);
+    ASSERT(res == NIL);
+
+    res = eval("identity", env, NULL);
+    ASSERT(res != NULL);
+    ASSERT(res->type == LAMBDA);
+    release(res);
+})
+
 SUITE(
     ADDTEST(test_eval_int),
     ADDTEST(test_eval_float),
@@ -193,5 +203,6 @@ SUITE(
     ADDTEST(test_eval_higher_order),
     ADDTEST(test_eval_condition),
     ADDTEST(test_eval_double_condition),
-    ADDTEST(test_eval_string))
+    ADDTEST(test_eval_string),
+    ADDTEST(test_eval_defn))
 
