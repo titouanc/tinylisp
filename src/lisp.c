@@ -1,5 +1,6 @@
 #include "lisp.h"
 #include "internals.h"
+#include <assert.h>
 
 lisp_obj *exit_proc(size_t argc, lisp_obj **argv)
 {
@@ -24,4 +25,39 @@ void stdenv(lisp_env *env)
     /* Debug, internal */
     set_env(env, "refcount", (lisp_obj*) &lisp_refcount);
     set_env(env, "dmp", (lisp_obj*) &lisp_dump_env);
+
+    /* Lisp plumbery */
+    lisp_obj *res = NULL;
+    res = eval("(define cons (lambda (head tail)"
+               "    (lambda (closure) (closure head tail))))", env, NULL);
+    assert(res == NIL);
+
+    res = eval("(define car (lambda (closure)"
+               "    (closure (lambda (head tail) head))))", env, NULL);
+    assert(res == NIL);
+
+    res = eval("(define cdr (lambda (closure)"
+               "    (closure (lambda (head tail) tail))))", env, NULL);
+    assert(res == NIL);
+
+    res = eval("(define cadr (lambda (lst) (car (cdr lst))))", env, NULL);
+    assert(res == NIL);
+
+    res = eval("(define range (lambda (min max)"
+               "    (if (< min max)"
+               "        (cons min (range (+ 1 min) max))"
+               "        #n)))", env, NULL);
+    assert(res == NIL);
+
+    res = eval("(define map (lambda (proc lst)"
+               "    (if lst"
+               "        (cons (proc (car lst)) (map proc (cdr lst)))"
+               "        #n)))", env, NULL);
+    assert(res == NIL);
+
+    res = eval("(define reduce (lambda (proc lst initial)"
+               "    (if lst"
+               "        (proc (car lst) (reduce proc (cdr lst) initial))"
+               "        initial)))", env, NULL);
+    assert(res == NIL);
 }
