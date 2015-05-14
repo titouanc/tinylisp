@@ -37,7 +37,7 @@ test: ${TESTS}
 
 # Run tests in valgrind
 memtest: ${TESTS}
-	for f in $^; do valgrind ${VGFLAGS} ./$$f && echo || exit 1; done
+	for f in $^; do valgrind ${VGFLAGS} ./$$f -v && echo || exit 1; done
 
 # Run tests in verbose mode
 vtest: ${TESTS}
