@@ -25,9 +25,6 @@ struct lisp_lambda_t {
     lisp_env      *context;
 };
 
-
-#define IS_NUMBER(x)   ((x)&(FLOAT|INT))
-#define IS_CALLABLE(x) ((x)&(PROC|LAMBDA))
 typedef enum {
     FLOAT  = 0x01,
     INT    = 0x02,
