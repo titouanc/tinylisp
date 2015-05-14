@@ -17,7 +17,7 @@ TEST(test_eval_int, {
     release(res);
     PRINT("test_eval_int 3");
 
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_float, {
@@ -27,7 +27,7 @@ TEST(test_eval_float, {
     ASSERT(res->type == FLOAT);
     ASSERT(res->value.f == 3.14);
     release(res);
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_const, {
@@ -37,7 +37,7 @@ TEST(test_eval_const, {
     ASSERT(eval("#f", env, NULL) == FALSE);
     ASSERT(eval("#n", env, NULL) == NIL);
 
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_env_lookup, {
@@ -49,7 +49,7 @@ TEST(test_env_lookup, {
     ASSERT(res == obj);
     release(res);
 
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_application, {
@@ -62,7 +62,7 @@ TEST(test_eval_application, {
     ASSERT(res->value.i == 42);
 
     release(res);
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_lambda, {
@@ -72,10 +72,12 @@ TEST(test_eval_lambda, {
     PRINT("lambda should not be destroyed here");
 
     ASSERT(obj->type == LAMBDA);
-    ASSERT(obj->value.l.nparams == 1);
-    ASSERT(streq(obj->value.l.param_names[0], "x"));
+
+    lisp_expr_lambda *lambda = &(obj->value.l.declaration->value.mklambda);
+    ASSERT(lambda->nparams == 1);
+    ASSERT(streq(lambda->param_names[0], "x"));
     release(obj);
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_call_lambda, {
@@ -88,7 +90,7 @@ TEST(test_eval_call_lambda, {
     ASSERT(obj->type == INT);
     ASSERT(obj->value.i == 3);
     release(obj);
-    destroy_env(env);
+    release_env(env);
 })
 
 
@@ -102,7 +104,7 @@ TEST(test_eval_long_sum, {
     ASSERT(obj->value.i == 21);
 
     release(obj);
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_define, {
@@ -115,7 +117,7 @@ TEST(test_eval_define, {
     ASSERT(a->type == INT);
     ASSERT(a->value.i == 3);
 
-    destroy_env(env);
+    release_env(env);
 })
 
 TEST(test_eval_define_and_call, {
@@ -132,7 +134,26 @@ TEST(test_eval_define_and_call, {
     ASSERT(res->value.i == 9);
     release(res);
 
-    destroy_env(env);
+    release_env(env);
+})
+
+TEST(test_eval_higher_order, {
+    lisp_env *env = create_env(NULL);
+    set_env(env, "+", &lisp_add);
+
+    /* plus : x -> (y -> x+y) */
+    lisp_obj *res = eval("(define plus (lambda (x) (lambda (y) (+ x y))))", env, NULL);
+    ASSERT(res == NIL);
+
+    res = eval("(define +3 (plus 3))", env, NULL);
+    ASSERT(res == NIL);
+
+    res = eval("(+3 39)", env, NULL);
+    ASSERT(res != NULL);
+    ASSERT(res->type == INT);
+    ASSERT(res->value.i == 42);
+
+    release_env(env);
 })
 
 SUITE(
@@ -145,5 +166,6 @@ SUITE(
     ADDTEST(test_eval_call_lambda),
     ADDTEST(test_eval_long_sum),
     ADDTEST(test_eval_define),
-    ADDTEST(test_eval_define_and_call))
+    ADDTEST(test_eval_define_and_call),
+    ADDTEST(test_eval_higher_order))
 

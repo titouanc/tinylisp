@@ -9,6 +9,7 @@ static lisp_obj *sub_proc(size_t argc, lisp_obj **argv);
 static lisp_obj *add_proc(size_t argc, lisp_obj **argv)
 {
     assert(argc > 0);
+    assert(argv[0] != NULL);
 
     lisp_obj *res = create_obj(argv[0]->type, argv[0]->value);
 
@@ -61,6 +62,7 @@ static lisp_obj *add_proc(size_t argc, lisp_obj **argv)
 static lisp_obj *sub_proc(size_t argc, lisp_obj **argv)
 {
     assert(argc > 0);
+    assert(argv[0] != NULL);
 
     lisp_obj *res = create_obj(argv[0]->type, argv[0]->value);
 
@@ -125,6 +127,7 @@ static lisp_obj *sub_proc(size_t argc, lisp_obj **argv)
 static lisp_obj *mul_proc(size_t argc, lisp_obj **argv)
 {
     assert(argc > 0);
+    assert(argv[0] != NULL);
 
     lisp_obj *res = create_obj(argv[0]->type, argv[0]->value);
 

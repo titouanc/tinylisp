@@ -1,11 +1,12 @@
 #include "env.h"
 #include "utils.h"
-
+#include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
 #define LISP_ENV_SIZE 10
 struct lisp_env_t {
+    int refcount;
     lisp_env *next;
     lisp_env *parent;
     size_t used;
@@ -17,7 +18,7 @@ lisp_env *create_env(lisp_env *parent)
 {
     lisp_env *res = calloc(1, sizeof(lisp_env));
     assert(res != NULL);
-    res->parent = parent;
+    res->parent = (parent) ? retain_env(parent) : NULL;
     return res;
 }
 
@@ -45,7 +46,7 @@ lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value)
     /* Otherwise insert here */
     else {
         if (env->used == LISP_ENV_SIZE){
-            env->next = create_env(env->parent);
+            env->next = create_env(NULL);
             env = env->next;
         }
 
@@ -57,12 +58,17 @@ lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value)
     return value;
 }
 
-lisp_env *destroy_env(lisp_env *env)
+static lisp_env *destroy_env(lisp_env *env)
 {
     assert(env != NULL);
+    assert(env->refcount == 0);
 
     if (env->next){
-        destroy_env(env->next);
+        release_env(env->next);
+    }
+
+    if (env->parent){
+        release_env(env->parent);
     }
 
     lisp_env *parent = env->parent;
@@ -74,6 +80,24 @@ lisp_env *destroy_env(lisp_env *env)
     memset(env, 0, sizeof(lisp_env));
     free(env);
     return parent;
+}
+
+lisp_env *release_env(lisp_env *env)
+{
+    assert(env != NULL);
+    if (env->refcount == 0){
+        destroy_env(env);
+        return NULL;
+    }
+    env->refcount--;
+    return env;
+}
+
+lisp_env *retain_env(lisp_env *env)
+{
+    assert(env != NULL);
+    env->refcount++;
+    return env;
 }
 
 lisp_obj *lookup(lisp_env *env, const char *name)
@@ -93,4 +117,17 @@ lisp_obj *lookup(lisp_env *env, const char *name)
         res = lookup(env->parent, name);
     }
     return res;
+}
+
+void dump_env(lisp_env *env)
+{
+    for (size_t i=0; i<env->used; i++){
+        printf("  %s: ", env->names[i]);
+        lisp_print(env->values[i]);
+        printf("\n");
+    }
+    if (env->next)
+        dump_env(env->next);
+    if (env->parent)
+        dump_env(env->parent);
 }

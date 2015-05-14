@@ -1,4 +1,5 @@
 #include "obj.h"
+#include "utils.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -31,12 +32,15 @@ static void destroy_obj(lisp_obj *obj)
     assert(obj != NULL);
     assert(obj->refcount == 0);
 
+    if (enable_debug){
+        printf("DESTROY \033[33mOBJ\033[0m id=%p ", obj);
+        lisp_print(obj);
+        printf("\n");
+    }
+
     if (obj->type == LAMBDA){
-        for (size_t i=0; i<obj->value.l.nparams; i++){
-            free(obj->value.l.param_names[i]);
-        }
-        free(obj->value.l.param_names);
-        release_expr(obj->value.l.body);
+        release_expr(obj->value.l.declaration);
+        release_env(obj->value.l.context);
     }
 
     /* Clean area */
@@ -61,7 +65,7 @@ void lisp_print(lisp_obj *obj)
         printf("#<Procedure>");
     }
     else if (obj->type == LAMBDA){
-        printf("#<Lambda>");
+        printf("#<Lambda %lu params>", obj->value.l.declaration->value.mklambda.nparams);
     }
     else if (obj == TRUE){printf("#t");}
     else if (obj == FALSE){printf("#f");}

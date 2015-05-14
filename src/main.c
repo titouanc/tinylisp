@@ -7,23 +7,30 @@ int main(int argc, const char **argv)
 {
     char buffer[4096];
     lisp_env *env = create_env(NULL);
-    stdenv(env);
+    lisp_err error = {.type=OK};
 
+    stdenv(env);
     printf("(lisp) > "); fflush(stdout);
 
     while (fgets(buffer, sizeof(buffer)-1, stdin)){
         char *endl;
         while ((endl = strrchr(buffer, '\n')) != NULL) *endl = '\0';
 
-        lisp_obj *res = eval(buffer, env, NULL);
-        printf(" => ");
-        lisp_print(res);
-        printf("\n");
-        release(res);
+        lisp_obj *res = eval(buffer, env, &error);
+        if (error.type != OK){
+            printf("ERROR: %s\n", error.description);
+        }
+        else {
+            printf(" => ");
+            lisp_print(res);
+            printf("\n");
+            release(res);
+        }
+        error.type = OK;
         printf("(lisp) > "); fflush(stdout);
     }
     printf("\n");
 
-    destroy_env(env);
+    release_env(env);
     return 0;
 }

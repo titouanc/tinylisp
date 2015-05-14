@@ -9,8 +9,12 @@ lisp_env *create_env(lisp_env *parent);
 
 lisp_obj *set_env(lisp_env *env, const char *name, lisp_obj *value);
 
-lisp_env *destroy_env(lisp_env *env);
+lisp_env *release_env(lisp_env *env);
+
+lisp_env *retain_env(lisp_env *env);
 
 lisp_obj *lookup(lisp_env *env, const char *name);
+
+void dump_env(lisp_env *env);
 
 #endif

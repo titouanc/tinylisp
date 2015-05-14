@@ -5,7 +5,7 @@ SOURCES = $(addprefix src/,${SRC})
 TESTS = $(subst .c,,$(shell ls tests/*.c))
 TOOLS = $(subst .c,,$(shell ls tools/*.c))
 OBJS = $(addprefix build/,$(subst .c,.o,${SRC}))
-CFLAGS = -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-gnu-union-cast
+CFLAGS = -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-gnu-union-cast -Werror
 LDFLAGS = -lm
 VGFLAGS = --error-exitcode=1 --leak-check=full 
 
@@ -37,7 +37,7 @@ test: ${TESTS}
 
 # Run tests in valgrind
 memtest: ${TESTS}
-	for f in $^; do valgrind ${VGFLAGS} ./$$f || exit 1; done
+	for f in $^; do valgrind ${VGFLAGS} ./$$f && echo || exit 1; done
 
 # Run tests in verbose mode
 vtest: ${TESTS}

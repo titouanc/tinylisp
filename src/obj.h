@@ -19,10 +19,10 @@ extern const lisp_obj false_obj;
 typedef lisp_obj *(*lisp_proc)(size_t argc, lisp_obj **argv);
 
 #include "expr.h"
+#include "env.h"
 struct lisp_lambda_t {
-    size_t     nparams;
-    char **param_names;
-    lisp_expr    *body;
+    lisp_expr *declaration;
+    lisp_env      *context;
 };
 
 

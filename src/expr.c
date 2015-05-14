@@ -1,11 +1,28 @@
+#define _GNU_SOURCE
 #include "expr.h"
 #include "utils.h"
 #include "env.h"
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #define LISP_MAX_PARAMS 10
+
+void raise_error(lisp_err *err, lisp_err_type type, const char *fmt, ...)
+{
+    if (err != NULL){
+        va_list args;
+        va_start(args, fmt);
+        err->type = type;
+            if (err->description != NULL){
+            free((void*) err->description);
+            err->description = NULL;
+        }
+        vasprintf((char **) &(err->description), fmt, args);
+        va_end(args);
+    }
+}
 
 lisp_expr *create_expr(lisp_expr_type type)
 {
@@ -19,6 +36,12 @@ static void destroy_expr(lisp_expr *expr)
 {
     assert(expr != NULL);
     assert(expr->refcount == 0);
+
+    if (enable_debug){
+        printf("DESTROY \033[34mEXPRESSION\033[0m id=%p ", expr);
+        dump_expr(expr);
+        printf("\n");
+    }
 
     switch (expr->type){
         case SELFEVAL:
@@ -37,6 +60,18 @@ static void destroy_expr(lisp_expr *expr)
         case DEFINE:
             free((void*) expr->value.define.name);
             release_expr(expr->value.define.expr);
+            break;
+        case MKLAMBDA:
+            release_expr(expr->value.mklambda.body);
+            for (size_t i=0; i<expr->value.mklambda.nparams; i++){
+                free(expr->value.mklambda.param_names[i]);
+            }
+            free(expr->value.mklambda.param_names);
+            break;
+        case CONDITION:
+            release_expr(expr->value.condition.condition);
+            release_expr(expr->value.condition.consequence);
+            release_expr(expr->value.condition.alternative);
             break;
     }
     memset(expr, 0, sizeof(lisp_expr));
@@ -76,7 +111,7 @@ static void dump_application(lisp_expr_application *app)
     printf(")");
 }
 
-static void dump_lambda(lisp_lambda *lambda)
+static void dump_lambda(lisp_expr_lambda *lambda)
 {
     printf("(lambda (");
     for (size_t i=0; i<lambda->nparams; i++){
@@ -92,12 +127,11 @@ void dump_expr(lisp_expr *expr)
 {
     assert(expr != NULL);
     switch (expr->type){
+        case MKLAMBDA:
+            dump_lambda(&expr->value.mklambda);
+            break;
         case SELFEVAL:
-            if (expr->value.selfeval.value->type == LAMBDA){
-                dump_lambda(&(expr->value.selfeval.value->value.l));
-            } else {
-                lisp_print(expr->value.selfeval.value);
-            }
+            lisp_print(expr->value.selfeval.value);
             break;
         case APPLICATION:
             dump_application(&(expr->value.application));
@@ -109,6 +143,15 @@ void dump_expr(lisp_expr *expr)
             printf("(%s %s ", expr->value.define.overwrite ? "set!" : "define", expr->value.define.name);
             dump_expr(expr->value.define.expr);
             break;
+        case CONDITION:
+            printf("(if ");
+            dump_expr(expr->value.condition.condition);
+            printf(" ");
+            dump_expr(expr->value.condition.consequence);
+            printf(" ");
+            dump_expr(expr->value.condition.alternative);
+            printf(")");
+
     }
 }
 
@@ -145,6 +188,10 @@ static lisp_expr *analyze_application(
 ){
     lisp_expr *res = create_expr(APPLICATION);
     res->value.application.proc = analyze(ignore(str+1), endptr, err);
+    if (res->value.application.proc == NULL){
+        release_expr(res);
+        return NULL;
+    }
     
     lisp_expr *params[LISP_MAX_PARAMS];
 
@@ -153,9 +200,16 @@ static lisp_expr *analyze_application(
     str = ignore(*endptr);
     for (i=0; i<LISP_MAX_PARAMS && *str != ')'; i++){
         if (*str == '\0'){
-            ERROR("Unexpected end of string");
+            raise_error(err, UNTERMINATED_EXPRESSION, "Unexpected end of string");
+            return NULL;
         }
         params[i] = analyze(str, endptr, err);
+        if (params[i] == NULL){
+            for (int j=0; j<i; j++){
+                release_expr(params[j]);
+            }
+            return NULL;
+        }
         str = ignore(*endptr);
     }
     *endptr = str + 1;
@@ -183,8 +237,8 @@ static lisp_expr *analyze_constant(
         *endptr = str+2;
         res->value.selfeval.value = FALSE;
     }
-    else if (err){
-        *err = UNEXPECTED_TOKEN;
+    else if (str[1] != 'n'){
+        raise_error(err, UNEXPECTED_TOKEN, "Unexpected token '%c' for constant value", str[1]);
     }
     return res;
 }
@@ -218,7 +272,8 @@ static lisp_expr *analyze_lambda(
     *endptr = str;
 
     if (*str != '('){
-        ERROR("Missing lambda param list");
+        raise_error(err, MISSING_ARGNAMES, "Missing lambda param list");
+        return NULL;
     }
     else {
         str++;
@@ -234,22 +289,23 @@ static lisp_expr *analyze_lambda(
         }
 
         if (*str != ')'){
-            ERROR("Unterminated argument names list");
+            raise_error(err, UNTERMINATED_EXPRESSION, "Unterminated argument names list");
+            return NULL;
         }
 
         lisp_expr *body = analyze(str+1, endptr, err);
+        if (body == NULL){
+            return NULL;
+        }
         *endptr = *endptr + 1;
 
-        lisp_obj *lambda = create_empty_obj(LAMBDA);
-        lambda->value.l.nparams = n;
-        lambda->value.l.param_names = calloc(n, sizeof(char*));
-        for (i=0; i<n; i++){
-            lambda->value.l.param_names[i] = duplicate_string(param_names[i], LISP_MAX_NAME_SIZE);
+        lisp_expr *res = create_expr(MKLAMBDA);
+        res->value.mklambda.body = body;
+        res->value.mklambda.nparams = n;
+        res->value.mklambda.param_names = calloc(n, sizeof(char*));
+        for (int i=0; i<n; i++){
+            res->value.mklambda.param_names[i] = duplicate_string(param_names[i], LISP_MAX_NAME_SIZE);
         }
-        lambda->value.l.body = body;
-
-        lisp_expr *res = create_expr(SELFEVAL);
-        res->value.selfeval.value = lambda;
         return res;
     }
     return NULL;
@@ -270,6 +326,9 @@ static lisp_expr *analyze_define(
     str = ignore(str+i);
 
     lisp_expr *expr = analyze(str, endptr, err);
+    if (expr == NULL){
+        return NULL;
+    }
     lisp_expr *res = create_expr(DEFINE);
     res->value.define.expr = expr;
     res->value.define.name = duplicate_string(name, LISP_MAX_NAME_SIZE);

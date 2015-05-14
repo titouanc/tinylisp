@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-static const bool enable_debug = false;
+const bool enable_debug = false;
 
 char *duplicate_string(const char *string, int maxsize)
 {
