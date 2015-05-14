@@ -142,6 +142,7 @@ void dump_expr(lisp_expr *expr)
         case DEFINE:
             printf("(%s %s ", expr->value.define.overwrite ? "set!" : "define", expr->value.define.name);
             dump_expr(expr->value.define.expr);
+            printf(")");
             break;
         case CONDITION:
             printf("(if ");
