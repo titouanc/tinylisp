@@ -10,6 +10,14 @@ TEST(test_create_int, {
     release(i);
 })
 
+TEST(test_create_string, {
+    lisp_obj *i = lisp_string("Hello");
+    ASSERT(i->refcount == 0);
+    ASSERT(i->type == STRING);
+    ASSERT(streq(i->value.s, "Hello"));
+    release(i);
+})
+
 TEST(test_add_ints, {
     lisp_obj *i = lisp_int(27);
     lisp_obj *j = lisp_int(15);
@@ -63,6 +71,7 @@ TEST(test_add_floats, {
 
 SUITE(
     ADDTEST(test_create_int),
+    ADDTEST(test_create_string),
     ADDTEST(test_add_ints),
     ADDTEST(test_add_floats),
     ADDTEST(test_add_intfloat))

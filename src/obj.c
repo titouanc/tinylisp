@@ -43,6 +43,10 @@ static void destroy_obj(lisp_obj *obj)
         release_env(obj->value.l.context);
     }
 
+    if (obj->type == STRING){
+        free((void *) obj->value.s);
+    }
+
     /* Clean area */
     memset(obj, 0, sizeof(lisp_obj));
 
@@ -69,6 +73,9 @@ void lisp_print(lisp_obj *obj)
             obj->value.l.declaration->value.mklambda.nparams,
             obj->value.l.context);
     }
+    else if (obj->type == STRING){
+        printf("\"%s\"", obj->value.s);
+    }
     else if (obj == TRUE){printf("#t");}
     else if (obj == FALSE){printf("#f");}
     else if (obj == NIL){printf("#n");}
@@ -93,4 +100,11 @@ lisp_obj *release(lisp_obj *obj)
         obj->refcount--;
     }
     return obj;
+}
+
+lisp_obj *lisp_string(const char *val)
+{
+    lisp_obj_val value;
+    value.s = duplicate_string(val, LISP_MAX_STRING_SIZE);
+    return create_obj(STRING, value);
 }

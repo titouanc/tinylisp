@@ -387,6 +387,26 @@ static lisp_expr *analyze_condition(
     return res;
 }
 
+static lisp_expr *analyze_string(
+    const char *str,
+    const char **endptr,
+    lisp_err *err
+){
+    char string[LISP_MAX_STRING_SIZE];
+    str++;
+
+    int i;
+    for (i=0; i<LISP_MAX_NAME_SIZE-1 && str[i] != '"'; i++){
+        string[i] = str[i];
+    }
+    string[i] = '\0';
+    *endptr = str+i+1;
+
+    lisp_expr *res = create_expr(SELFEVAL);
+    res->value.selfeval.value = lisp_string(string);
+    return res;
+}
+
 #define is_number(x) ('0' <= x && x <= '9')
 lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
 {
@@ -410,6 +430,9 @@ lisp_expr *analyze(const char *str, const char **endptr, lisp_err *err)
         else {
             res = analyze_application(str, endptr, err);
         }
+    }
+    else if (*str == '"'){
+        res = analyze_string(str, endptr, err);
     }
     else if (*str == '#'){
         res = analyze_constant(str, endptr, err);

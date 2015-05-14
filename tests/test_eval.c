@@ -170,6 +170,15 @@ ENVTEST(test_eval_double_condition, {
     release(res);
 })
 
+ENVTEST(test_eval_string, {
+    lisp_obj *res = eval("\"Hello world\"", env, NULL);
+    ASSERT(res != NULL);
+    ASSERT(res->type == STRING);
+    PRINT("String is \"%s\"", res->value.s);
+    ASSERT(streq(res->value.s, "Hello world"));
+    release(res);
+})
+
 SUITE(
     ADDTEST(test_eval_int),
     ADDTEST(test_eval_float),
@@ -183,5 +192,6 @@ SUITE(
     ADDTEST(test_eval_define_and_call),
     ADDTEST(test_eval_higher_order),
     ADDTEST(test_eval_condition),
-    ADDTEST(test_eval_double_condition))
+    ADDTEST(test_eval_double_condition),
+    ADDTEST(test_eval_string))
 
