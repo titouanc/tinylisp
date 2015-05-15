@@ -55,6 +55,7 @@ void stdenv(lisp_env *env)
     set_env(env, "-", (lisp_obj*) &lisp_sub);
     set_env(env, "*", (lisp_obj*) &lisp_mul);
     set_env(env, "<", (lisp_obj*) &lisp_lt);
+    set_env(env, "real", (lisp_obj*) &lisp_real);
 
     /* Repl, i/o */
     set_env(env, "display", (lisp_obj*) &lisp_display);

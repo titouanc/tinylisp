@@ -46,10 +46,28 @@ ENVTEST(test_eval_cadr_range, {
 ENVTEST(test_eval_null_cdr_range,
     ASSERT(EVAL("(cdr (range 0 1))") == NIL))
 
+ENVTEST(test_eval_real_int, {
+    lisp_obj *res = EVAL("(real 3)");
+    ASSERT(res != NULL);
+    ASSERT(res->type == FLOAT);
+    ASSERT(res->value.f == 3);
+    release(res);
+})
+
+ENVTEST(test_eval_real_float, {
+    lisp_obj *res = EVAL("(real 3.14)");
+    ASSERT(res != NULL);
+    ASSERT(res->type == FLOAT);
+    ASSERT(res->value.f == 3.14);
+    release(res);
+})
+
 SUITE(
     ADDTEST(test_eval_car),
     ADDTEST(test_eval_cdr),
     ADDTEST(test_eval_cadr),
     ADDTEST(test_eval_car_range),
     ADDTEST(test_eval_cadr_range),
-    ADDTEST(test_eval_null_cdr_range))
+    ADDTEST(test_eval_null_cdr_range),
+    ADDTEST(test_eval_real_int),
+    ADDTEST(test_eval_real_float))

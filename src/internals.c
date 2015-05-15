@@ -226,6 +226,19 @@ static lisp_obj *dump_env_proc(size_t argc, lisp_obj **argv)
     return NIL;
 }
 
+static lisp_obj *real_proc(size_t argc, lisp_obj **argv)
+{
+    assert(argc == 1);
+    if (argv[0]->type == INT){
+        return lisp_float(argv[0]->value.i);
+    }
+    else if (argv[0]->type == FLOAT){
+        return retain(argv[0]);
+    }
+    ERROR("Cannot convert non-number to real");
+    return NULL;
+}
+
 #define INTERNAL_PROCEDURE(func) {.refcount=-42, .type=PROC, .value.p=func}
 
 const lisp_obj lisp_add = INTERNAL_PROCEDURE(add_proc);
@@ -235,3 +248,4 @@ const lisp_obj lisp_refcount = INTERNAL_PROCEDURE(refcount_proc);
 const lisp_obj lisp_display = INTERNAL_PROCEDURE(display_proc);
 const lisp_obj lisp_lt = INTERNAL_PROCEDURE(lt_proc);
 const lisp_obj lisp_dump_env = INTERNAL_PROCEDURE(dump_env_proc);
+const lisp_obj lisp_real = INTERNAL_PROCEDURE(real_proc);
