@@ -11,9 +11,43 @@ static lisp_obj *make_lambda(lisp_expr *expr, lisp_env *context)
     return res;
 }
 
-lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
+static lisp_obj *make_thunk(lisp_expr *expr, lisp_env *env)
 {
-    lisp_obj *callable = eval_expression(app->proc, env, err);
+    lisp_obj *res = create_empty_obj(THUNK);
+    res->value.l.declaration = retain_expr(expr);
+    res->value.l.context = retain_env(env);
+    return res;
+}
+
+#define FORCE_VALUE(expr,env,err) trampoline(eval_expression((expr), (env), (err)), (err))
+
+static inline lisp_obj *trampoline(lisp_obj *obj, lisp_err *err)
+{
+    int i=0;
+    while (obj && obj->type == THUNK){
+        lisp_expr *body = obj->value.l.declaration;
+        // if (i > 0){
+        //     printf("Trampoline [%d] ", i);
+        //     dump_expr(body);
+        //     printf("\n");
+        // }
+
+        lisp_obj *res = eval_expression(body, obj->value.l.context, err);
+        
+        // printf(" -> ");
+        // lisp_print(res);
+        // printf("\n");
+
+        release(obj);
+        obj = res;
+        i++;
+    }
+    return obj;
+}
+
+static lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
+{
+    lisp_obj *callable = FORCE_VALUE(app->proc, env, err);
     if (! callable){
         return NULL;
     }
@@ -25,7 +59,7 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         /* Eval args */
         lisp_obj **args = calloc(app->nparams, sizeof(lisp_obj*));
         for (size_t i=0; i<app->nparams; i++){
-            lisp_obj *arg = eval_expression(app->params[i], env, err);
+            lisp_obj *arg = FORCE_VALUE(app->params[i], env, err);
             if (! arg){
                 for (size_t j=0; j<i; j++){
                     release(args[j]);
@@ -51,6 +85,7 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
         lisp_lambda *lambda = &(callable->value.l);
         lisp_expr_lambda *lambda_expr = &(lambda->declaration->value.mklambda);
 
+        /* Check arity */
         if (app->nparams != lambda_expr->nparams){
             raise_error(err, WRONG_ARITY, "Arity error ! Expected %d params, got %d",
                 lambda_expr->nparams, app->nparams);
@@ -76,10 +111,8 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
             dump_env(locals);
         }
 
-        /* Eval body */
-        res = eval_expression(lambda_expr->body, locals, err);
-
-        /* cleanup env */
+        /* Wrap in thunk for trampoline */
+        res = make_thunk(lambda_expr->body, locals);
         release_env(locals);
     }
     else {
@@ -92,16 +125,15 @@ lisp_obj *apply(lisp_expr_application *app, lisp_env *env, lisp_err *err)
     return res;
 }
 
-lisp_obj *eval_condition(lisp_expr_condition *expr, lisp_env *env, lisp_err *err)
+static lisp_obj *eval_condition(lisp_expr_condition *expr, lisp_env *env, lisp_err *err)
 {
-    lisp_obj *cond = eval_expression(expr->condition, env, err);
+    lisp_obj *cond = FORCE_VALUE(expr->condition, env, err);
     if (cond == NULL){
         return NULL;
     }
 
-    lisp_obj *res = eval_expression(
-        (cond != NIL && cond != FALSE) ? expr->consequence : expr->alternative,
-        env, err);
+    lisp_expr *next = (cond != NIL && cond != FALSE) ? expr->consequence : expr->alternative;
+    lisp_obj *res = make_thunk(next, env);
     release(cond);
     return res;
 }
@@ -110,15 +142,18 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
 {
     lisp_obj *value = NULL;
     assert(expr != NULL);
+
     switch (expr->type){
         case MKLAMBDA:
             return make_lambda(expr, env);
+
         case SELFEVAL:
             value = expr->value.selfeval.value;
             if (! value){
                 return NULL;
             }
             return retain(value);
+
         case LOOKUP:
             value = lookup(env, expr->value.lookup.name);
             if (! value){
@@ -126,20 +161,25 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
                 return NULL;
             }
             return retain(value);
+
         case APPLICATION:
             return apply(&(expr->value.application), env, err);
+
         case CONDITION:
             return eval_condition(&(expr->value.condition), env, err);
+
         case DEFINE:
-            value = eval_expression(expr->value.define.expr, env, err);
+            value = trampoline(eval_expression(expr->value.define.expr, env, err), err);
             if (! value){
                 return NULL;
             }
             release(set_env(env, expr->value.define.name, value));
+
         default:
             return NIL;
     }
 }
+
 
 lisp_obj *eval(const char *str, lisp_env *env, lisp_err *err)
 {
@@ -147,7 +187,7 @@ lisp_obj *eval(const char *str, lisp_env *env, lisp_err *err)
     DEBUG("EVAL \"%s\"", str);
     lisp_expr *expr = analyze(str, &end, err);
     if (expr){
-        lisp_obj *res = eval_expression(expr, env, err);
+        lisp_obj *res = trampoline(eval_expression(expr, env, err), err);
         release_expr(expr);
         return res;
     }

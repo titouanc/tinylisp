@@ -30,7 +30,8 @@ typedef enum {
     INT    = 0x02,
     STRING = 0x04,
     LAMBDA = 0x08,
-    PROC   = 0x10
+    PROC   = 0x10,
+    THUNK  = 0x80  /* A lambda that doesnt need env expansion */
 } lisp_obj_type;
 
 /* MAX 64ko strings */

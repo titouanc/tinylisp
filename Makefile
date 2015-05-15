@@ -1,13 +1,24 @@
 TARGET = build/tinylisp
-SRC = env.c eval.c internals.c lisp.c obj.c utils.c expr.c
 
-SOURCES = $(addprefix src/,${SRC})
+SRC = $(subst src/,,$(shell ls src/*.c | grep -v 'main.c'))
 TESTS = $(subst .c,,$(shell ls tests/*.c))
 TOOLS = $(subst .c,,$(shell ls tools/*.c))
 OBJS = $(addprefix build/,$(subst .c,.o,${SRC}))
-CFLAGS = -g -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-gnu-union-cast -Werror
+
+CFLAGS = -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-gnu-union-cast -Werror
 LDFLAGS = -lm
-VGFLAGS = --error-exitcode=1 --leak-check=full 
+VGFLAGS = --error-exitcode=1 --leak-check=full --show-leak-kinds=all
+
+ifneq (${PROFILE},)
+	CFLAGS += -pg
+	LDFLAGS += -pg
+endif
+
+ifneq (${RELEASE},)
+	CFLAGS += -march=native -O2
+else
+	CFLAGS += -g
+endif
 
 all: ${TARGET} ${TOOLS}
 

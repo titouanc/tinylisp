@@ -3,3 +3,6 @@ script: "make all test"
 compiler:
   - clang
   - gcc
+env:
+  - RELEASE=
+  - RELEASE=true

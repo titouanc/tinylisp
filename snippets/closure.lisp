@@ -5,3 +5,6 @@
 
 (define plus #n)
 (define plus3 #n)
+
+(define (outer) (lambda (inner) (lambda (inner-inner) (dmp inner-inner))))
+(((outer) (outer)) (outer))

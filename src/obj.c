@@ -38,7 +38,7 @@ static void destroy_obj(lisp_obj *obj)
         printf("\n");
     }
 
-    if (obj->type == LAMBDA){
+    if (obj->type & (LAMBDA | THUNK)){
         release_expr(obj->value.l.declaration);
         release_env(obj->value.l.context);
     }
@@ -72,6 +72,9 @@ void lisp_print(lisp_obj *obj)
         printf("#<Lambda nparams=%lu env=%p>", 
             obj->value.l.declaration->value.mklambda.nparams,
             obj->value.l.context);
+    }
+    else if (obj->type == THUNK){
+        printf("#<Thunk>");
     }
     else if (obj->type == STRING){
         printf("\"%s\"", obj->value.s);

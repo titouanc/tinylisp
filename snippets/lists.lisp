@@ -1,7 +1,7 @@
 (define (range min max) (if (< min max) (cons min (range (+ 1 min) max)) #n))
 (define (sq  x) (* x x))
 
-(define N 10000)
-(define sum-squares (reduce + (map sq (range 0 N)) 0))
+(define N 100)
+(define sum-squares (apply + (map sq (range 0 N))))
 
 (display sum-squares)
