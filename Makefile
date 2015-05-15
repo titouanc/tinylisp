@@ -55,7 +55,7 @@ vtest: ${TESTS}
 	for f in $^; do ./$$f -v || exit 1; done
 
 clean:
-	rm -f build/*.o
+	rm -f build/*.o gmon.out
 
 mrproper: clean
 	rm -f ${TARGET} ${TESTS} ${TOOLS}

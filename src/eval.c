@@ -23,12 +23,25 @@ static lisp_obj *make_thunk(lisp_expr *expr, lisp_env *env)
 
 static inline lisp_obj *trampoline(lisp_obj *obj, lisp_err *err)
 {
+    int i = 0;
     while (obj && obj->type == THUNK){
         lisp_expr *body = obj->value.l.declaration;
         lisp_env *env = obj->value.l.context;
         lisp_obj *res = eval_expression(body, env, err);
+        
+        if (enable_debug && i > 0){
+            printf("Trampolined [%d] -> ", i);
+            lisp_print(res);
+            printf("\n");
+        }
+
         release(obj);
         obj = res;
+        i++;
+    }
+
+    if (enable_debug && i > 0){
+        printf("=== End of trampoline\n");
     }
     return obj;
 }
