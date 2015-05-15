@@ -23,24 +23,12 @@ static lisp_obj *make_thunk(lisp_expr *expr, lisp_env *env)
 
 static inline lisp_obj *trampoline(lisp_obj *obj, lisp_err *err)
 {
-    int i=0;
     while (obj && obj->type == THUNK){
         lisp_expr *body = obj->value.l.declaration;
-        // if (i > 0){
-        //     printf("Trampoline [%d] ", i);
-        //     dump_expr(body);
-        //     printf("\n");
-        // }
-
-        lisp_obj *res = eval_expression(body, obj->value.l.context, err);
-        
-        // printf(" -> ");
-        // lisp_print(res);
-        // printf("\n");
-
+        lisp_env *env = obj->value.l.context;
+        lisp_obj *res = eval_expression(body, env, err);
         release(obj);
         obj = res;
-        i++;
     }
     return obj;
 }
@@ -169,7 +157,7 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
             return eval_condition(&(expr->value.condition), env, err);
 
         case DEFINE:
-            value = trampoline(eval_expression(expr->value.define.expr, env, err), err);
+            value = FORCE_VALUE(expr->value.define.expr, env, err);
             if (! value){
                 return NULL;
             }
@@ -187,7 +175,7 @@ lisp_obj *eval(const char *str, lisp_env *env, lisp_err *err)
     DEBUG("EVAL \"%s\"", str);
     lisp_expr *expr = analyze(str, &end, err);
     if (expr){
-        lisp_obj *res = trampoline(eval_expression(expr, env, err), err);
+        lisp_obj *res = FORCE_VALUE(expr, env, err);
         release_expr(expr);
         return res;
     }
