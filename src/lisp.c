@@ -48,7 +48,7 @@ static const char *lisp_stubs[] = {
     "(define (apply proc seq) (reduce proc (car seq) (cdr seq)))"
 };
 
-void stdenv(lisp_env *env)
+bool stdenv(lisp_env *env)
 {
     /* Arithmetic, logical */
     set_env(env, "+", (lisp_obj*) &lisp_add);
@@ -69,6 +69,10 @@ void stdenv(lisp_env *env)
     lisp_obj *res = NULL;
     for (size_t i=0; i<sizeof(lisp_stubs)/sizeof(lisp_stubs[0]); i++){
         res = eval(lisp_stubs[i], env, NULL);
-        assert(res == NIL);
+        if (res != NIL){
+            return false;
+        }
     }
+    
+    return true;
 }

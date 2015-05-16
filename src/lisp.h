@@ -14,6 +14,6 @@ extern lisp_obj lisp_exit;
 /*
  * Populate env with standard functions
  */
-void stdenv(lisp_env *env);
+bool stdenv(lisp_env *env);
 
 #endif

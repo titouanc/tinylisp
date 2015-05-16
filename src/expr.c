@@ -19,7 +19,10 @@ void raise_error(lisp_err *err, lisp_err_type type, const char *fmt, ...)
             free((void*) err->description);
             err->description = NULL;
         }
-        vasprintf((char **) &(err->description), fmt, args);
+        int res = vasprintf((char **) &(err->description), fmt, args);
+        if (res == -1){
+            err->description = NULL;
+        }
         va_end(args);
     }
 }

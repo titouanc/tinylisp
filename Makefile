@@ -10,18 +10,22 @@ OBJSPROFILE = $(subst build/,build/profile-,${OBJS})
 OBJSTESTS = $(subst tests/,build/,$(subst .c,.o,${TESTS}))
 OBJSTOOLS = $(subst tools/,build/,$(subst .c,.o,${TOOLS}))
 
+CPPFLAGS = 
 CFLAGS = -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-gnu-union-cast -Werror
 LDFLAGS = -lm
 VALGRINDFLAGS = --error-exitcode=1 --leak-check=full --show-leak-kinds=all
 GPROFFLAGS = -b
 
-ifneq (${RELEASE},)
+ifeq (${BUILD},release)
 	CFLAGS += -march=native -O2
+	CPPFLAGS += -DNDEBUG
 else
 	CFLAGS += -g
 endif
 
 all: ${TARGET} ${TOOLS}
+release:
+	make "BUILD=release"
 
 # Compile
 build/%.o: src/%.c
