@@ -1,2 +1,9 @@
+#Build
 *.o
+bin/*
+
+# Profiling
 gmon.out
+*.profile
+*.report
+PROFILE

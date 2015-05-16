@@ -1,18 +1,19 @@
-TARGET = build/tinylisp
+TARGET = bin/tinylisp
 
-SRC = $(subst src/,,$(shell ls src/*.c | grep -v 'main.c'))
-TESTS = $(subst .c,,$(shell ls tests/*.c))
-TOOLS = $(subst .c,,$(shell ls tools/*.c))
+SRC = $(subst src/,,$(shell ls src/*.c | grep -v 'tinylisp.c'))
+TESTS = $(subst tests/,bin/,$(subst .c,,$(shell ls tests/*.c)))
+TOOLS = $(subst tools/,bin/,$(subst .c,,$(shell ls tools/*.c)))
+SNIPPETS = $(shell ls snippets/*.lisp)
+
 OBJS = $(addprefix build/,$(subst .c,.o,${SRC}))
+OBJSPROFILE = $(subst build/,build/profile-,${OBJS})
+OBJSTESTS = $(subst tests/,build/,$(subst .c,.o,${TESTS}))
+OBJSTOOLS = $(subst tools/,build/,$(subst .c,.o,${TOOLS}))
 
 CFLAGS = -std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-gnu-union-cast -Werror
 LDFLAGS = -lm
-VGFLAGS = --error-exitcode=1 --leak-check=full --show-leak-kinds=all
-
-ifneq (${PROFILE},)
-	CFLAGS += -pg
-	LDFLAGS += -pg
-endif
+VALGRINDFLAGS = --error-exitcode=1 --leak-check=full --show-leak-kinds=all
+GPROFFLAGS = -b
 
 ifneq (${RELEASE},)
 	CFLAGS += -march=native -O2
@@ -22,9 +23,7 @@ endif
 
 all: ${TARGET} ${TOOLS}
 
-${TARGET}: build/main.o ${OBJS}
-	${CC} -o $@ $^ ${LDFLAGS}
-
+# Compile
 build/%.o: src/%.c
 	${CC} -c -o $@ ${CPPFLAGS} ${CFLAGS} $<
 
@@ -34,13 +33,42 @@ build/%.o: tests/%.c
 build/%.o: tools/%.c
 	${CC} -c -o $@ -I./src/ ${CPPFLAGS} ${CFLAGS} $<
 
-tests/test_%: build/test_%.o ${OBJS}
+build/profile-%.o: src/%.c
+	${CC} -c -o $@ -pg ${CPPFLAGS} ${CFLAGS} $<
+
+build/profile-%.o: tests/%.c
+	${CC} -c -o $@ -pg -I./lighttest2/ -I./src/ ${CPPFLAGS} ${CFLAGS} $<
+
+build/profile-%.o: tools/%.c
+	${CC} -c -o $@ -pg -I./src/ ${CPPFLAGS} ${CFLAGS} $<
+
+# Link
+bin/profile-%: build/profile-%.o ${OBJSPROFILE}
+	${CC} -o $@ $^ -pg ${LDFLAGS}
+
+bin/%: build/%.o ${OBJS}
 	${CC} -o $@ $^ ${LDFLAGS}
 
-tools/%: build/%.o ${OBJS}
-	${CC} -o $@ $^ ${LDFLAGS}
+# Profile
+profile: $(addsuffix .report,$(subst bin/,,${TESTS})) PROFILE $(subst .lisp,.report,${SNIPPETS})
 
-.PHONY: clean mrproper test memtest vtest all
+PROFILE: bin/profile-tinylisp $(subst .lisp,.profile,${SNIPPETS})
+	gprof ${GPROFFLAGS} $^ > $@
+
+snippets/%.profile: snippets/%.lisp bin/profile-tinylisp
+	./bin/profile-tinylisp < $< && mv gmon.out $@
+
+snippets/%.report: bin/profile-tinylisp snippets/%.profile
+	gprof ${GPROFFLAGS} $^ > $@
+
+%.profile: bin/profile-%
+	./$< && mv gmon.out $@
+
+%.report: bin/profile-% %.profile
+	gprof ${GPROFFLAGS} $^ > $@
+
+.PHONY: all clean mrproper test memtest vtest profile
+.PRECIOUS: build/%.o build/profile-%.o bin/profile-% %.profile snippets/%.profile
 
 # Run tests
 test: ${TESTS}
@@ -48,14 +76,14 @@ test: ${TESTS}
 
 # Run tests in valgrind
 memtest: ${TESTS}
-	for f in $^; do valgrind ${VGFLAGS} ./$$f -v && echo || exit 1; done
+	for f in $^; do valgrind ${VALGRINDFLAGS} ./$$f -v && echo || exit 1; done
 
 # Run tests in verbose mode
 vtest: ${TESTS}
 	for f in $^; do ./$$f -v || exit 1; done
 
 clean:
-	rm -f build/*.o gmon.out
+	rm -f build/*.o *.profile *.report snippets/*.profile snippets/*.report PROFILE
 
 mrproper: clean
-	rm -f ${TARGET} ${TESTS} ${TOOLS}
+	rm -f bin/*
