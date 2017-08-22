@@ -71,6 +71,7 @@ snippets/%.report: bin/profile-tinylisp snippets/%.profile
 %.report: bin/profile-% %.profile
 	gprof ${GPROFFLAGS} $^ > $@
 
+
 .PHONY: all clean mrproper test memtest vtest profile
 .PRECIOUS: build/%.o build/profile-%.o bin/profile-% %.profile snippets/%.profile
 
