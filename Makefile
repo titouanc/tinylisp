@@ -1,5 +1,6 @@
 TARGET = bin/tinylisp
 
+
 SRC = $(subst src/,,$(shell ls src/*.c | grep -v 'tinylisp.c'))
 TESTS = $(subst tests/,bin/,$(subst .c,,$(shell ls tests/*.c)))
 TOOLS = $(subst tools/,bin/,$(subst .c,,$(shell ls tools/*.c)))
