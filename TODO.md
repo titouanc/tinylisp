@@ -18,3 +18,5 @@
 * [ ] Use char_iterator as analyze() input (adpater for files, strings, ...)
 * [ ] Backtrace in lisp_err
 * [ ] Support comments
+
+# Other
