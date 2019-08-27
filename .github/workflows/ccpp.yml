@@ -4,11 +4,12 @@ on: [push]
 
 jobs:
   build:
-    matrix:
-      compiler: [gcc, clang]
-      target: ["BUILD=", "BUILD=release"]
-
-    runs-on: ubuntu-latest
+    strategy:
+      name: "Test with ${{matrix.compiler}} ${{matrix.target}}"
+      runs-on: ubuntu-latest
+      matrix:
+        compiler: [gcc, clang]
+        target: ["BUILD=", "BUILD=release"]
     
     steps:
     - uses: actions/checkout@v1
