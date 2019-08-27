@@ -1,12 +1,14 @@
-name: C/C++ CI
+name: Build and test
 
-on: [push]
+on:
+  - push
 
 jobs:
   build:
+    name: "Test with ${{matrix.compiler}} ${{matrix.target}}"
+    runs-on: ubuntu-latest
+
     strategy:
-      name: "Test with ${{matrix.compiler}} ${{matrix.target}}"
-      runs-on: ubuntu-latest
       matrix:
         compiler: [gcc, clang]
         target: ["BUILD=", "BUILD=release"]
