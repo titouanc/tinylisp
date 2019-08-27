@@ -1,0 +1,18 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  build:
+    matrix:
+      compiler: [gcc, clang]
+      target: ["BUILD=", "BUILD=release"]
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: make
+      run: make CC=${{matrix.compiler}} ${{matrix.target}}
+    - name: run tests
+      run: make CC=${{matrix.compiler}} ${{matrix.target}} test
