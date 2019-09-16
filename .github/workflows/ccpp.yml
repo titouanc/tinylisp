@@ -15,7 +15,11 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
+    
+    - uses: textbook/git-checkout-submodule-action@master
+    
     - name: make
       run: make CC=${{matrix.compiler}} ${{matrix.target}}
+    
     - name: run tests
       run: make CC=${{matrix.compiler}} ${{matrix.target}} test
