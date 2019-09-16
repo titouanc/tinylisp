@@ -175,6 +175,7 @@ lisp_obj *eval_expression(lisp_expr *expr, lisp_env *env, lisp_err *err)
                 return NULL;
             }
             release(set_env(env, expr->value.define.name, value));
+            return NIL;
 
         default:
             return NIL;
